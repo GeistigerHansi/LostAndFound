@@ -1,0 +1,44 @@
+﻿<Window x:Class="LostAndFound.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LostAndFound"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="200" />
+        </Grid.RowDefinitions>
+
+        <DataGrid ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" AutoGenerateColumns="False" Grid.Row="0">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Id" Binding="{Binding Id}" Width="50" />
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" />
+                <DataGridTextColumn Header="Beschreibung" Binding="{Binding Beschreibung}" />
+                <DataGridTextColumn Header="Fundort" Binding="{Binding Fundort}" />
+                <DataGridTextColumn Header="Datum" Binding="{Binding Datum}" />
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Orientation="Vertical" Grid.Row="1" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal">
+                <Label Width="60">Name:</Label>
+                <TextBox Width="200" Text="{Binding SelectedItem.Name, UpdateSourceTrigger=PropertyChanged}" />
+                <Label Width="80">Fundort:</Label>
+                <TextBox Width="200" Text="{Binding SelectedItem.Fundort, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <Label Width="60">Beschreibung:</Label>
+                <TextBox Width="400" Text="{Binding SelectedItem.Beschreibung, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <Button Content="Load" Command="{Binding LoadCommand}" Width="80" />
+                <Button Content="Add" Command="{Binding AddCommand}" Width="80" Margin="10,0,0,0" />
+                <Button Content="Delete" Command="{Binding DeleteCommand}" Width="80" Margin="10,0,0,0" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>
