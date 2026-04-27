@@ -1,48 +1,83 @@
-﻿using LostAndFound.WPF.Model;
+using LostAndFound.WPF.Model;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Server.EF_Core;
-using System.Collections.Generic;
 
 namespace Server.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/[controller]s")] // → /api/Items
     public class ItemController : ControllerBase
     {
-        private static Context context = new Context();
+        private readonly Context _context;
 
+        public ItemController(Context context)
+        {
+            _context = context;
+        }
+
+        // GET /api/Items
+        // GET /api/Items?search=Schlüssel
         [HttpGet]
-        public IEnumerable<Item> Get()
+        public async Task<ActionResult<IEnumerable<Item>>> Get([FromQuery] string? search)
         {
-            return context.Items;
+            var query = _context.Items.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(i =>
+                    i.Title.Contains(search) ||
+                    i.Location.Contains(search) ||
+                    i.Category.Contains(search));
+            }
+
+            return Ok(await query.ToListAsync());
         }
 
+        // GET /api/Items/5
         [HttpGet("{id}")]
-        public Item Get(int id)
+        public async Task<ActionResult<Item>> Get(int id)
         {
-            return context.Items.Find(id);
+            var item = await _context.Items.FindAsync(id);
+            if (item == null) return NotFound();
+            return Ok(item);
         }
 
+        // POST /api/Items
         [HttpPost]
-        public void Post([FromBody] Item value)
+        public async Task<ActionResult<Item>> Post([FromBody] Item value)
         {
-            context.Items.Add(value);
-            context.SaveChanges();
+            _context.Items.Add(value);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(Get), new { id = value.Id }, value);
         }
 
+        // PUT /api/Items/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] Item value)
+        public async Task<IActionResult> Put(int id, [FromBody] Item value)
         {
-            var edited = context.Items.Find(id);
-            context.Entry(edited).CurrentValues.SetValues(value);
-            context.SaveChanges();
+            var existing = await _context.Items.FindAsync(id);
+            if (existing == null) return NotFound();
+
+            _context.Entry(existing).CurrentValues.SetValues(value);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
 
+        // DELETE /api/Items/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            context.Items.Remove(context.Items.Find(id));
-            context.SaveChanges();
+            var item = await _context.Items.FindAsync(id);
+            if (item == null) return NotFound();
+
+            // Zugehörige Claims mitlöschen
+            var claims = _context.Claims.Where(c => c.ItemId == id);
+            _context.Claims.RemoveRange(claims);
+
+            _context.Items.Remove(item);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

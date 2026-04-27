@@ -1,48 +1,78 @@
-﻿using LostAndFound.WPF.Model;
+using LostAndFound.WPF.Model;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Server.EF_Core;
-using System.Collections.Generic;
 
 namespace Server.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/[controller]s")] // → /api/Claims
     public class ClaimController : ControllerBase
     {
-        private static Context context = new Context();
+        private readonly Context _context;
 
+        public ClaimController(Context context)
+        {
+            _context = context;
+        }
+
+        // GET /api/Claims
         [HttpGet]
-        public IEnumerable<Claim> Get()
+        public async Task<ActionResult<IEnumerable<Claim>>> Get()
         {
-            return context.Claims;
+            return Ok(await _context.Claims.ToListAsync());
         }
 
+        // GET /api/Claims/5
         [HttpGet("{id}")]
-        public Claim Get(int id)
+        public async Task<ActionResult<Claim>> Get(int id)
         {
-            return context.Claims.Find(id);
+            var claim = await _context.Claims.FindAsync(id);
+            if (claim == null) return NotFound();
+            return Ok(claim);
         }
 
+        // GET /api/Claims/ByItem/3   ← wird von ClaimsViewModel benötigt
+        [HttpGet("ByItem/{itemId}")]
+        public async Task<ActionResult<IEnumerable<Claim>>> GetByItem(int itemId)
+        {
+            var claims = await _context.Claims
+                .Where(c => c.ItemId == itemId)
+                .ToListAsync();
+            return Ok(claims);
+        }
+
+        // POST /api/Claims
         [HttpPost]
-        public void Post([FromBody] Claim value)
+        public async Task<ActionResult<Claim>> Post([FromBody] Claim value)
         {
-            context.Claims.Add(value);
-            context.SaveChanges();
+            _context.Claims.Add(value);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(Get), new { id = value.Id }, value);
         }
 
+        // PUT /api/Claims/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] Claim value)
+        public async Task<IActionResult> Put(int id, [FromBody] Claim value)
         {
-            var edited = context.Claims.Find(id);
-            context.Entry(edited).CurrentValues.SetValues(value);
-            context.SaveChanges();
+            var existing = await _context.Claims.FindAsync(id);
+            if (existing == null) return NotFound();
+
+            _context.Entry(existing).CurrentValues.SetValues(value);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
 
+        // DELETE /api/Claims/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            context.Claims.Remove(context.Claims.Find(id));
-            context.SaveChanges();
+            var claim = await _context.Claims.FindAsync(id);
+            if (claim == null) return NotFound();
+
+            _context.Claims.Remove(claim);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

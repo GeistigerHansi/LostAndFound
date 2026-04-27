@@ -1,23 +1,26 @@
-﻿using LostAndFound.WPF.Model;
+using LostAndFound.WPF.Model;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text.RegularExpressions;
-using System.Web;
-
 
 namespace Server.EF_Core
 {
     public class Context : DbContext
     {
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        public Context(DbContextOptions<Context> options) : base(options) { }
+
+        public DbSet<Item> Items { get; set; } = null!;
+        public DbSet<Claim> Claims { get; set; } = null!;
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            var connectionString = "server=localhost;database=lostandfound;uid=root;password=;";
-            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+            // Item → Claims (1:n), Cascade Delete
+            modelBuilder.Entity<Claim>()
+                .HasOne<Item>()
+                .WithMany()
+                .HasForeignKey(c => c.ItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // String-Suche in SQLite: LIKE ist case-insensitiv per Default ✓
+            base.OnModelCreating(modelBuilder);
         }
-        public DbSet<Item> Items { get; set; }
-        public DbSet<Claim> Claims { get; set; }
     }
 }
